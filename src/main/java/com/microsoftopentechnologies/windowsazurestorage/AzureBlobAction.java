@@ -10,15 +10,18 @@ import jenkins.model.Jenkins;
 import org.acegisecurity.Authentication;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.export.Exported;
+import org.kohsuke.stapler.export.ExportedBean;
 
 import hudson.model.RunAction;
 import hudson.model.Run;
+import hudson.model.Api;
 
 import com.microsoftopentechnologies.windowsazurestorage.WAStoragePublisher.WAStorageDescriptor;
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
 
 
-public class AzureBlobAction implements RunAction {
+@ExportedBean public class AzureBlobAction implements RunAction {
 	private final Run build;
 	private final String storageAccountName;
 	private final String containerName;
@@ -37,6 +40,10 @@ public class AzureBlobAction implements RunAction {
 		this.zipArchiveBlob = zipArchiveBlob;
 	}
 	
+        public Api getApi() {
+            return new Api(this);
+        }
+        
 	public String getDisplayName() {
 		return "Azure Artifacts";
 	}
@@ -74,7 +81,7 @@ public class AzureBlobAction implements RunAction {
 		return containerName;
 	}
 	
-	public List<AzureBlob> getIndividualBlobs() {
+	@Exported public List<AzureBlob> getIndividualBlobs() {
 		return individualBlobs;
 	}
 	

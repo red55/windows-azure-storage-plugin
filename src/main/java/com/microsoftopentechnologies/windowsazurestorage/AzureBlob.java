@@ -1,8 +1,10 @@
 package com.microsoftopentechnologies.windowsazurestorage;
 
 import java.io.Serializable;
+import org.kohsuke.stapler.export.Exported;
+import org.kohsuke.stapler.export.ExportedBean;
 
-public class AzureBlob implements Serializable {
+@ExportedBean public class AzureBlob implements Serializable {
 
 	private static final long serialVersionUID = -1873484056669542679L;
 	
@@ -18,7 +20,7 @@ public class AzureBlob implements Serializable {
 		return blobName;
 	}
 	
-	public String getBlobURL() {
+	@Exported public String getBlobURL() {
 		return blobURL;
 	}
 
