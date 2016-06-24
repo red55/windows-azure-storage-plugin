@@ -1,43 +1,42 @@
 package com.microsoftopentechnologies.windowsazurestorage;
 
+import com.microsoftopentechnologies.windowsazurestorage.WAStoragePublisher.WAStorageDescriptor;
+import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
+import hudson.model.Api;
+import hudson.model.Run;
+import hudson.model.RunAction;
 import java.io.IOException;
 import java.util.List;
-
 import javax.servlet.ServletException;
-
 import jenkins.model.Jenkins;
-
 import org.acegisecurity.Authentication;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
 
-import hudson.model.RunAction;
-import hudson.model.Run;
-import hudson.model.Api;
 
-import com.microsoftopentechnologies.windowsazurestorage.WAStoragePublisher.WAStorageDescriptor;
-import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
-
-
-@ExportedBean public class AzureBlobAction implements RunAction {
-	private final Run build;
+public class AzureBlobAction implements RunAction {
 	private final String storageAccountName;
 	private final String containerName;
 	private final boolean allowAnonymousAccess;
 	private final AzureBlob zipArchiveBlob;
 	private final List<AzureBlob> individualBlobs;
+	private final Run build;
 
 	public AzureBlobAction(Run build, String storageAccountName, String containerName,
 			List<AzureBlob> individualBlobs, AzureBlob zipArchiveBlob,
 			boolean allowAnonymousAccess) {
-		this.build = build;
 		this.storageAccountName = storageAccountName;
 		this.containerName = containerName;
 		this.individualBlobs = individualBlobs;
 		this.allowAnonymousAccess = allowAnonymousAccess;
 		this.zipArchiveBlob = zipArchiveBlob;
+		this.build = build;
+	}
+	
+	public Run<?,?> getBuild() {
+		return build;
 	}
 	
         public Api getApi() {
@@ -67,10 +66,6 @@ import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInf
 	}
 
 	public void onLoad() {
-	}
-	
-	public Run<?,?> getBuild() {
-	      return build;
 	}
 	
 	public String getStorageAccountName() {

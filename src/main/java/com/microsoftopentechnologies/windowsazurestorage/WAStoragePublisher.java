@@ -17,11 +17,13 @@ package com.microsoftopentechnologies.windowsazurestorage;
 
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
 import com.microsoftopentechnologies.windowsazurestorage.helper.Utils;
-import hudson.*;
-import hudson.model.AbstractBuild;
+import hudson.EnvVars;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.Util;
 import hudson.model.AbstractProject;
 import hudson.model.Action;
-import hudson.model.BuildListener;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -33,7 +35,11 @@ import hudson.util.CopyOnWriteList;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
 import javax.annotation.Nonnull;
 import javax.servlet.ServletException;
 import jenkins.tasks.SimpleBuildStep;
@@ -42,7 +48,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-public class WAStoragePublisher extends Recorder implements SimpleBuildStep {
+public class WAStoragePublisher extends Recorder implements SimpleBuildStep{
 
 	/**
 	 * Windows Azure Storage Account Name.
@@ -104,9 +110,9 @@ public class WAStoragePublisher extends Recorder implements SimpleBuildStep {
 	 * File Path prefix
 	 */
 	private String virtualPath;
-
+	
 	private boolean manageArtifacts;
-
+	
 	public enum UploadType {
 		INDIVIDUAL,
 		ZIP,
@@ -272,8 +278,8 @@ public class WAStoragePublisher extends Recorder implements SimpleBuildStep {
 	/**
 	 * Returns storage account object based on the name selected in job
 	 * configuration
-	 *
-	 * @return StorageAccount
+	 * 
+	 * @return storageAcc StorageAccountInfo
 	 */
 	public StorageAccountInfo getStorageAccount() {
 		StorageAccountInfo storageAcc = null;
@@ -342,8 +348,7 @@ public class WAStoragePublisher extends Recorder implements SimpleBuildStep {
 		try {
 			List<AzureBlob> individualBlobs = new ArrayList<AzureBlob>();
 			List<AzureBlob> archiveBlobs = new ArrayList<AzureBlob>();
-			listener.getLogger().println("launcher: " + launcher.getChannel());
-
+			
 			int filesUploaded = WAStorageClient.upload(run, launcher, listener, strAcc,
 					expContainerName, cntPubAccess, cleanUpContainer, expFP,
 					expVP, excludeFP, getArtifactUploadType(), individualBlobs, archiveBlobs, manageArtifacts);
@@ -377,68 +382,6 @@ public class WAStoragePublisher extends Recorder implements SimpleBuildStep {
 		return BuildStepMonitor.STEP;
 	}
 
-	private boolean validateData(AbstractBuild<?, ?> build,
-			BuildListener listener, StorageAccountInfo storageAccount,
-			String expContainerName) throws IOException, InterruptedException {
-
-		// No need to upload artifacts if build failed and the job is
-		// set to not upload on success.
-		if ((build.getResult() == Result.FAILURE || build.getResult() == Result.ABORTED) && uploadArtifactsOnlyIfSuccessful) {
-			listener.getLogger().println(
-					Messages.WAStoragePublisher_build_failed_err());
-			return false;
-		}
-
-		if (storageAccount == null) {
-			listener.getLogger().println(
-					Messages.WAStoragePublisher_storage_account_err());
-			build.setResult(Result.UNSTABLE);
-			return false;
-		}
-
-		// Validate container name
-		if (!Utils.validateContainerName(expContainerName)) {
-			listener.getLogger().println(
-					Messages.WAStoragePublisher_container_name_err());
-			build.setResult(Result.UNSTABLE);
-			return false;
-		}
-
-		// Validate files path
-		if (Utils.isNullOrEmpty(filesPath)) {
-			listener.getLogger().println(
-					Messages.WAStoragePublisher_filepath_err());
-			build.setResult(Result.UNSTABLE);
-			return false;
-		}
-
-		if (getArtifactUploadType() == UploadType.INVALID) {
-			listener.getLogger().println(
-					Messages.WAStoragePublisher_uploadtype_invalid());
-			build.setResult(Result.UNSTABLE);
-			return false;
-		}
-
-		// Check if storage account credentials are valid
-		try {
-			WAStorageClient.validateStorageAccount(
-					storageAccount.getStorageAccName(),
-					storageAccount.getStorageAccountKey(),
-					storageAccount.getBlobEndPointURL());
-		} catch (Exception e) {
-			listener.getLogger().println(Messages.Client_SA_val_fail());
-			listener.getLogger().println(
-					"Storage Account name --->"
-					+ storageAccount.getStorageAccName() + "<----");
-			listener.getLogger().println(
-					"Blob end point url --->"
-					+ storageAccount.getBlobEndPointURL() + "<----");
-			build.setResult(Result.UNSTABLE);
-			return false;
-		}
-		return true;
-	}
-
 	@Extension
 	public static final class WAStorageDescriptor extends
 			BuildStepDescriptor<Publisher> {
@@ -460,11 +403,13 @@ public class WAStoragePublisher extends Recorder implements SimpleBuildStep {
 
 		/**
 		 * Validates storage account details.
-		 *
-		 * @param storageAccountName
-		 * @return
-		 * @throws IOException
-		 * @throws ServletException
+		 * 
+		 * @param was_storageAccName storage account name
+         * @param was_storageAccountKey storage account key
+         * @param was_blobEndPointURL blob endpoint URL
+         * @return FormValidation.ok form validation
+         * @throws IOException throws exception
+         * @throws ServletException throws exception
 		 */
 		public FormValidation doCheckAccount(
 				@QueryParameter String was_storageAccName,
@@ -498,8 +443,8 @@ public class WAStoragePublisher extends Recorder implements SimpleBuildStep {
 		 *
 		 * @param val name of the container
 		 * @return FormValidation result
-		 * @throws IOException
-		 * @throws ServletException
+		 * @throws IOException throws exception
+		 * @throws ServletException throws exception
 		 */
 		public FormValidation doCheckName(@QueryParameter String val)
 				throws IOException, ServletException {
