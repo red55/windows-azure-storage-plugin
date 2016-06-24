@@ -10,25 +10,26 @@ import jenkins.model.Jenkins;
 import org.acegisecurity.Authentication;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
+import org.kohsuke.stapler.export.Exported;
+import org.kohsuke.stapler.export.ExportedBean;
 
-import hudson.model.AbstractBuild;
 import hudson.model.RunAction;
 import hudson.model.Run;
+import hudson.model.Api;
 
-import com.microsoftopentechnologies.windowsazurestorage.WAStoragePublisher;
 import com.microsoftopentechnologies.windowsazurestorage.WAStoragePublisher.WAStorageDescriptor;
 import com.microsoftopentechnologies.windowsazurestorage.beans.StorageAccountInfo;
 
 
-public class AzureBlobAction implements RunAction {
-	private final AbstractBuild build;
+@ExportedBean public class AzureBlobAction implements RunAction {
+	private final Run build;
 	private final String storageAccountName;
 	private final String containerName;
 	private final boolean allowAnonymousAccess;
 	private final AzureBlob zipArchiveBlob;
 	private final List<AzureBlob> individualBlobs;
 
-	public AzureBlobAction(AbstractBuild build, String storageAccountName, String containerName,
+	public AzureBlobAction(Run build, String storageAccountName, String containerName,
 			List<AzureBlob> individualBlobs, AzureBlob zipArchiveBlob,
 			boolean allowAnonymousAccess) {
 		this.build = build;
@@ -39,6 +40,10 @@ public class AzureBlobAction implements RunAction {
 		this.zipArchiveBlob = zipArchiveBlob;
 	}
 	
+        public Api getApi() {
+            return new Api(this);
+        }
+        
 	public String getDisplayName() {
 		return "Azure Artifacts";
 	}
@@ -64,7 +69,7 @@ public class AzureBlobAction implements RunAction {
 	public void onLoad() {
 	}
 	
-	public AbstractBuild<?,?> getBuild() {
+	public Run<?,?> getBuild() {
 	      return build;
 	}
 	
@@ -76,7 +81,7 @@ public class AzureBlobAction implements RunAction {
 		return containerName;
 	}
 	
-	public List<AzureBlob> getIndividualBlobs() {
+	@Exported public List<AzureBlob> getIndividualBlobs() {
 		return individualBlobs;
 	}
 	
